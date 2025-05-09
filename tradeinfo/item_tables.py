@@ -2,7 +2,7 @@ from collections import defaultdict
 from db.data.month_ranges import month_ranges
 
 
-def get_data_by_country_and_year(conn, region, name_ru, year, units_of_account="тыс"):
+def get_data_by_country_and_year(conn, region, name_ru, year):
     try:
         with conn.cursor() as cursor:
             # 1. Получаем доступные месяцы за указанный год
@@ -60,17 +60,6 @@ def get_data_by_country_and_year(conn, region, name_ru, year, units_of_account="
             ]
 
             results = [dict(zip(columns, row)) for row in rows]
-
-            # 3. Масштабирование при необходимости
-            if units_of_account == "млн":
-                scale_keys = [
-                    "export_tons", "export_units", "export_value",
-                    "import_tons", "import_units", "import_value"
-                ]
-                for row in results:
-                    for key in scale_keys:
-                        if row[key] is not None:
-                            row[key] = row[key] / 1000
 
         return months[-1], results
     finally:
@@ -249,7 +238,7 @@ def sum_export_import_by_year(results):
     return dict(year_sums)
 
 
-def get_summary_data(yearly_data, month, units_of_account):
+def get_summary_data(yearly_data, month):
 
     years = sorted(yearly_data.keys())
     prev_year, curr_year = years
@@ -284,7 +273,7 @@ def get_summary_data(yearly_data, month, units_of_account):
             return "без изменений"
 
     table = [
-        [f"{units_of_account}. долл. США", f"{month_ranges[month]} {prev_year} год", f"{month_ranges[month]} {curr_year} год", f"Прирост {curr_year}/{prev_year}"],
+        [f"тыс. долл. США", f"{month_ranges[month]} {prev_year} год", f"{month_ranges[month]} {curr_year} год", f"Прирост {curr_year}/{prev_year}"],
         ["Товарооборот", f"{round(prev_trade, 1)}", f"{round(curr_trade, 1)}", calc_growth(curr_trade, prev_trade)],
         ["Экспорт", f"{round(prev_export, 1)}", f"{round(curr_export, 1)}", calc_growth(curr_export, prev_export)],
         ["Импорт", f"{round(prev_import, 1)}", f"{round(curr_import, 1)}", calc_growth(curr_import, prev_import)],
@@ -292,26 +281,3 @@ def get_summary_data(yearly_data, month, units_of_account):
     ]
 
     return table
-
-
-def generate_trade_turnover_text(year_sums, country, region):
-
-    years = sorted(year_sums.keys())
-    prev_year, curr_year = years
-
-    prev_trade = year_sums[prev_year]['export_value'] + year_sums[prev_year]['import_value']
-    curr_trade = year_sums[curr_year]['export_value'] + year_sums[curr_year]['import_value']
-
-    if prev_trade == 0:
-        change_text = "данные за предыдущий год отсутствуют"
-    else:
-        change_ratio = (curr_trade - prev_trade) / prev_trade * 100
-        direction = "выше" if change_ratio > 0 else "ниже"
-        change_percent = f"{abs(round(change_ratio, 1))}%"
-        change_text = f"что на {change_percent} {direction}, по сравнению с предыдущим годом ({round(prev_trade / 1000, 1)} млн. долл. США)"
-
-    result = (
-        f"Товарооборот между {region} и {country} за {curr_year} год составил "
-        f"{round(curr_trade / 1000, 1)} млн. долл. США, {change_text}."
-    )
-    return result

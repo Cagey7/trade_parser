@@ -5,6 +5,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.table import WD_ALIGN_VERTICAL, WD_TABLE_ALIGNMENT
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
+from docx.shared import Cm
 from docx.shared import RGBColor
 from db.database import connect_to_db
 from doc_gen import generate_data_for_doc
@@ -16,7 +17,7 @@ year = 2025
 country = "Россия"
 region = "Республика Казахстан"
 units_of_account = "тыс"
-month, data_for_doc = generate_data_for_doc(conn, year, country, region, units_of_account)
+month, data_for_doc = generate_data_for_doc(conn, year, country, region)
 
 # Установка стиля текста
 def set_run_style(run):
@@ -34,7 +35,14 @@ def format_paragraph(paragraph, first_line_indent=True):
 def add_document_header(doc, header_text):
     paragraph = doc.add_paragraph()
     paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    # Отступы слева и справа для более раннего переноса строк
+    paragraph_format = paragraph.paragraph_format
+    paragraph_format.left_indent = Cm(2)
+    paragraph_format.right_indent = Cm(2)
+
     format_paragraph(paragraph, first_line_indent=False)
+    
     run = paragraph.add_run(header_text)
     run.bold = True
     set_run_style(run)
@@ -42,6 +50,7 @@ def add_document_header(doc, header_text):
 # Обычный параграф
 def add_summary_paragraph(doc, text):
     paragraph = doc.add_paragraph()
+    paragraph.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY  # выравнивание по ширине
     format_paragraph(paragraph)
     run = paragraph.add_run(text)
     set_run_style(run)
@@ -173,7 +182,7 @@ def add_import_analysis_text(doc, text_blocks):
                 run.italic = True
 
 
-def generate_export_doc_with_repeating_header(doc, table_header, table_data, month, year, units_of_account):
+def generate_export_doc_with_repeating_header(doc, table_header, table_data, month, year):
     # Удаляем 10-й элемент, если есть
     for row in table_data:
         if len(row) > 9:
@@ -322,8 +331,8 @@ def generate_report(filename='final_report3.docx'):
     add_import_analysis_text(doc, data_for_doc["import_text"])
     add_import_analysis_text(doc, data_for_doc["export_text"])
 
-    generate_export_doc_with_repeating_header(doc, data_for_doc["export_header"], data_for_doc["export_table"][:15], month, year, units_of_account)
-    generate_export_doc_with_repeating_header(doc, data_for_doc["import_header"], data_for_doc["import_table"][:15], month, year, units_of_account)
+    generate_export_doc_with_repeating_header(doc, data_for_doc["export_header"], data_for_doc["export_table"][:15], month, year)
+    generate_export_doc_with_repeating_header(doc, data_for_doc["import_header"], data_for_doc["import_table"][:15], month, year)
 
     doc.save(filename)
 

@@ -5,7 +5,18 @@ def fn(x):
     return f"{x:,.1f}".replace(",", " ").replace(".0", "")
 
 
-def gen_decline_growth_row(data, trend, units_of_account):
+def num_converter(num):
+    if num >= 1_000_000_000:
+        return num / 1_000_000_000, "трлн."
+    elif num >= 1_000_000:
+        return num / 1_000_000, "млрд."
+    elif num >= 1_000:
+        return num / 1_000, "млн."
+    else:
+        return num, "тыс."
+
+
+def gen_decline_growth_row(data, trend):
     if data[-1] < 0:
         name = re.sub(r'^\d+\.\s*', '', data[0].split(' (код')[0]).strip().lower()
         curr_value = float(data[2])
@@ -15,7 +26,7 @@ def gen_decline_growth_row(data, trend, units_of_account):
             if prev_value == 0:
                 return
             drop_percent = drop_value / prev_value * 100
-            return f"{name} - на {round(drop_percent, 1)}% или на {fn(drop_value)} {units_of_account}. долл. США (с {fn(prev_value)} до {fn(curr_value)} {units_of_account}. долл. США)"
+            return f"{name} - на {round(drop_percent, 1)}% или на {fn(drop_value)} тыс. долл. США (с {fn(prev_value)} до {fn(curr_value)} тыс. долл. США)"
         elif trend == "growth":
             growth_value = data[-2]
             if growth_value.startswith("+"):
@@ -23,70 +34,70 @@ def gen_decline_growth_row(data, trend, units_of_account):
             elif growth_value == "new":
                 growth_value = "на 100%"
 
-            return f"{name} - {growth_value} или на {fn(drop_value)} {units_of_account}. долл. США (с {fn(curr_value)} до {fn(prev_value)} {units_of_account}. долл. США)"
+            return f"{name} - {growth_value} или на {fn(drop_value)} тыс. долл. США (с {fn(curr_value)} до {fn(prev_value)} тыс. долл. США)"
 
 
-def gen_summary_row(data, units_of_account):
+def gen_summary_row(data):
     name = re.sub(r'^\d+\.\s*', '', data[0].split(' (код')[0]).strip().lower()
     value = float(data[5])
     share = data[6].strip()
-    return f"{name} – {fn(value)} {units_of_account}. долл. США (с долей {share})"
+    return f"{name} – {fn(value)} тыс. долл. США (с долей {share})"
 
 
 
-def gen_summary_text(flow_data, country, month, year, region, units_of_account):
+def gen_summary_text(flow_data, country, month, year, region):
     direction, prev_value, current_value, change = flow_data
     prev_value = float(prev_value)
     current_value = float(current_value)
     if direction == "Экспорт":
         if change == 'new':
-            return f"{direction} из {region} в {country} за {month_ranges[month]} {year} году начался и составил {current_value:.1f} {units_of_account}. долл. США."
+            return f"{direction} из {region} в {country} за {month_ranges[month]} {year} году начался и составил {current_value:.1f} тыс. долл. США."
         elif '-' in change and '%' in change:
-            return f"{direction} из {region} в {country} за {month_ranges[month]} {year} год снизился на {change.strip('-')} и составил {current_value:.1f} {units_of_account}. долл. США."
+            return f"{direction} из {region} в {country} за {month_ranges[month]} {year} год снизился на {change.strip('-')} и составил {current_value:.1f} тыс. долл. США."
         elif '+' in change:
-            return f"{direction} из {region} в {country} за {month_ranges[month]} {year} год вырос на {change.strip('+')} и составил {current_value:.1f} {units_of_account}. долл. США."
+            return f"{direction} из {region} в {country} за {month_ranges[month]} {year} год вырос на {change.strip('+')} и составил {current_value:.1f} тыс. долл. США."
         elif 'рост в' in change:
-            return f"{direction} из {region} в {country} за {month_ranges[month]} {year} год увеличился {change} и составил {current_value:.1f} {units_of_account}. долл. США."
+            return f"{direction} из {region} в {country} за {month_ranges[month]} {year} год увеличился {change} и составил {current_value:.1f} тыс. долл. США."
         else:
-            return f"{direction} из {region} в {country} за {month_ranges[month]} {year} год составил {current_value:.1f} {units_of_account}. долл. США."
+            return f"{direction} из {region} в {country} за {month_ranges[month]} {year} год составил {current_value:.1f} тыс. долл. США."
     elif direction == "Импорт":
         if change == 'new':
-            return f"{direction} в {region} из {country} за {year} году начался и составил {current_value:.1f} {units_of_account}. долл. США."
+            return f"{direction} в {region} из {country} за {year} году начался и составил {current_value:.1f} тыс. долл. США."
         elif '-' in change and '%' in change:
-            return f"{direction} в {region} из {country} за {month_ranges[month]} {year} год снизился на {change.strip('-')} и составил {current_value:.1f} {units_of_account}. долл. США."
+            return f"{direction} в {region} из {country} за {month_ranges[month]} {year} год снизился на {change.strip('-')} и составил {current_value:.1f} тыс. долл. США."
         elif '+' in change:
-            return f"{direction} в {region} из {country} за {month_ranges[month]} {year} год вырос на {change.strip('+')} и составил {current_value:.1f} {units_of_account}. долл. США."
+            return f"{direction} в {region} из {country} за {month_ranges[month]} {year} год вырос на {change.strip('+')} и составил {current_value:.1f} тыс. долл. США."
         elif 'рост в' in change:
-            return f"{direction} в {region} из {country} за {month_ranges[month]} {year} год увеличился {change} и составил {current_value:.1f} {units_of_account}. долл. США."
+            return f"{direction} в {region} из {country} за {month_ranges[month]} {year} год увеличился {change} и составил {current_value:.1f} тыс. долл. США."
         else:
-            return f"{direction} в {region} из {country} за {month_ranges[month]} {year} год составил {current_value:.1f} {units_of_account}. долл. США."
+            return f"{direction} в {region} из {country} за {month_ranges[month]} {year} год составил {current_value:.1f} тыс. долл. США."
     elif direction == "Товарооборот":
         if change == 'new':
-            return f"{direction} между {region} и {country} за {month_ranges[month]} {year} году начался и составил {current_value:.1f} {units_of_account}. долл. США."
+            return f"{direction} между {region} и {country} за {month_ranges[month]} {year} году начался и составил {current_value:.1f} тыс. долл. США."
         elif '-' in change and '%' in change:
-            return f"{direction} между {region} и {country} за {month_ranges[month]} {year} год снизился на {change.strip('-')} и составил {current_value:.1f} {units_of_account}. долл. США."
+            return f"{direction} между {region} и {country} за {month_ranges[month]} {year} год снизился на {change.strip('-')} и составил {current_value:.1f} тыс. долл. США."
         elif '+' in change:
-            return f"{direction} между {region} и {country} за {month_ranges[month]} {year} год вырос на {change.strip('+')} и составил {current_value:.1f} {units_of_account}. долл. США."
+            return f"{direction} между {region} и {country} за {month_ranges[month]} {year} год вырос на {change.strip('+')} и составил {current_value:.1f} тыс. долл. США."
         elif 'рост в' in change:
-            return f"{direction} между {region} и {country} за {month_ranges[month]} {year} год увеличился {change} и составил {current_value:.1f} {units_of_account}. долл. США."
+            return f"{direction} между {region} и {country} за {month_ranges[month]} {year} год увеличился {change} и составил {current_value:.1f} тыс. долл. США."
         else:
-            return f"{direction} между {region} и {country} за {month_ranges[month]} {year} год составил {current_value:.1f} {units_of_account} долл. США."
+            return f"{direction} между {region} и {country} за {month_ranges[month]} {year} год составил {current_value:.1f} тыс долл. США."
 
 
 
-def gen_text_flow(data, data_rev, flow_data, country, year, region, month, flow_type, units_of_account):
+def gen_text_flow(data, data_rev, flow_data, country, year, region, month, flow_type):
 
     if flow_type == "export":
         export_text = []
 
-        summary_text = gen_summary_text(flow_data[2], country, month, year, region, units_of_account)
+        summary_text = gen_summary_text(flow_data[2], country, month, year, region)
         export_text.append(summary_text)
 
         decline_data = sorted(data_rev[1:], key=lambda x: x[-1], reverse=False)
 
         rows_decline_text = []
         for row in decline_data[:7]:
-            result = gen_decline_growth_row(row, 'decline', units_of_account)
+            result = gen_decline_growth_row(row, 'decline')
             if result is not None:
                 rows_decline_text.append(result)
         decline_text = (
@@ -99,7 +110,7 @@ def gen_text_flow(data, data_rev, flow_data, country, year, region, month, flow_
         
         row_growth_text = []
         for row in growth_data[:7]:
-            result = gen_decline_growth_row(row, 'growth', units_of_account)
+            result = gen_decline_growth_row(row, 'growth')
             if result is not None:
                 row_growth_text.append(result)
         growth_text = (
@@ -110,7 +121,7 @@ def gen_text_flow(data, data_rev, flow_data, country, year, region, month, flow_
         
         row_main_text = []
         for row in data[1:8]:
-            result = gen_summary_row(row, units_of_account)
+            result = gen_summary_row(row)
             if result is not None:
                 row_main_text.append(result)
 
@@ -128,14 +139,14 @@ def gen_text_flow(data, data_rev, flow_data, country, year, region, month, flow_
     
     if flow_type == "import":
         import_text = []
-        summary_text = gen_summary_text(flow_data[3], country, month, year, region, units_of_account)
+        summary_text = gen_summary_text(flow_data[3], country, month, year, region)
     
         import_text.append(summary_text)
 
         decline_data = sorted(data_rev[1:], key=lambda x: x[-1], reverse=False)
         row_decline_text = []
         for row in decline_data[:7]:
-            result = gen_decline_growth_row(row, 'decline', units_of_account)
+            result = gen_decline_growth_row(row, 'decline')
             if result is not None:
                 row_decline_text.append(result)
 
@@ -148,7 +159,7 @@ def gen_text_flow(data, data_rev, flow_data, country, year, region, month, flow_
         growth_data = sorted(data[1:], key=lambda x: x[-1], reverse=False)
         row_growth_text = []
         for row in growth_data[:7]:
-            result = gen_decline_growth_row(row, 'growth', units_of_account)
+            result = gen_decline_growth_row(row, 'growth')
             if result is not None:
                 row_growth_text.append(result)
 
@@ -160,7 +171,7 @@ def gen_text_flow(data, data_rev, flow_data, country, year, region, month, flow_
 
         row_main_text = []
         for row in data[1:8]:
-            result = gen_summary_row(row, units_of_account)
+            result = gen_summary_row(row)
             if result is not None:
                 row_main_text.append(result)
 
@@ -174,7 +185,3 @@ def gen_text_flow(data, data_rev, flow_data, country, year, region, month, flow_
         import_text.append(info_text)
 
         return import_text
-
-
-def import_text_gen():
-    pass

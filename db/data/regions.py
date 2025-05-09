@@ -1,0 +1,23 @@
+regions = [
+    {"name": "Республика Казахстан", "kgd_code": "rk", "statgov_code": "40111", "statgov_name": "товар-страна"},
+    {"name": "Астана", "kgd_code": "71", "statgov_code": "40163", "statgov_name": "г. Астана"},
+    {"name": "Алматы", "kgd_code": "75", "statgov_code": "40155", "statgov_name": "г. Алматы"},
+    {"name": "Шымкент", "kgd_code": "79", "statgov_code": "40167", "statgov_name": "г. Шымкент"},
+    {"name": "область Абай", "kgd_code": "10", "statgov_code": "40125", "statgov_name": "Абайская"},
+    {"name": "Акмолинская область", "kgd_code": "11", "statgov_code": "40129", "statgov_name": "Акмолинская"},
+    {"name": "Актюбинская область", "kgd_code": "15", "statgov_code": "40133", "statgov_name": "Актюбинская"},
+    {"name": "Алматинская область", "kgd_code": "19", "statgov_code": "40137", "statgov_name": "Алматинская"},
+    {"name": "Атырауская область", "kgd_code": "23", "statgov_code": "40142", "statgov_name": "Атырауская"},
+    {"name": "Восточно-Казахстанская область", "kgd_code": "63", "statgov_code": "40147", "statgov_name": "Восточно-Казахстанская"},
+    {"name": "Жамбылская область", "kgd_code": "31", "statgov_code": "40171", "statgov_name": "Жамбылская"},
+    {"name": "область Жетісу", "kgd_code": "33", "statgov_code": "40177", "statgov_name": "Жетісуская"},
+    {"name": "Западно-Казахстанская область", "kgd_code": "27", "statgov_code": "40184", "statgov_name": "Западно-Казахстанская"},
+    {"name": "Карагандинская область", "kgd_code": "35", "statgov_code": "40189", "statgov_name": "Карагандинская"},
+    {"name": "Костанайская область", "kgd_code": "39", "statgov_code": "40194", "statgov_name": "Костанайская"},
+    {"name": "Кызылординская область", "kgd_code": "43", "statgov_code": "40203", "statgov_name": "Кызылординская"},
+    {"name": "Мангистауская область", "kgd_code": "47", "statgov_code": "40208", "statgov_name": "Мангистауская"},
+    {"name": "Павлодарская область", "kgd_code": "55", "statgov_code": "40215", "statgov_name": "Павлодарская"},
+    {"name": "Северо-Казахстанская область", "kgd_code": "59", "statgov_code": "40221", "statgov_name": "Северо-Казахстанская"},
+    {"name": "Туркестанская область", "kgd_code": "61", "statgov_code": "40228", "statgov_name": "Туркестанская"},
+    {"name": "область Ұлытау", "kgd_code": "62", "statgov_code": "19112", "statgov_name": "Ұлытауская"}
+]

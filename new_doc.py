@@ -9,14 +9,17 @@ from docx.shared import Cm
 from docx.shared import RGBColor
 from db.database import connect_to_db
 from doc_gen import generate_data_for_doc
+from tradeinfo.item_tables import convert_table
 from db.data.month_ranges import month_ranges
+from db.data.country_cases import country_cases
+from db.data.region_cases import region_cases
+
 
 # Подключение к БД и загрузка данных
 conn = connect_to_db()
-year = 2025
-country = "Россия"
-region = "Республика Казахстан"
-units_of_account = "тыс"
+year = 2024
+country = "Бразилия"
+region = "Алматы"
 month, data_for_doc = generate_data_for_doc(conn, year, country, region)
 
 # Установка стиля текста
@@ -182,7 +185,7 @@ def add_import_analysis_text(doc, text_blocks):
                 run.italic = True
 
 
-def generate_export_doc_with_repeating_header(doc, table_header, table_data, month, year):
+def generate_export_doc_with_repeating_header(doc, table_header, table_data, month, year, units):
     # Удаляем 10-й элемент, если есть
     for row in table_data:
         if len(row) > 9:
@@ -212,7 +215,9 @@ def generate_export_doc_with_repeating_header(doc, table_header, table_data, mon
         cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
         for paragraph in cell.paragraphs:
             paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
-
+            paragraph.paragraph_format.space_before = Pt(3)
+            paragraph.paragraph_format.space_after = Pt(3)
+    
     def make_bold(cell):
         for paragraph in cell.paragraphs:
             for run in paragraph.runs:
@@ -254,7 +259,7 @@ def generate_export_doc_with_repeating_header(doc, table_header, table_data, mon
     make_bold(cell)
 
     cell = table.cell(0, 1)
-    cell.text = f"{month_ranges[month]}\n{year-1} года"
+    cell.text = f"{year-1} год" if month == 12 else f"{month_ranges[month]}\n{year-1} {"год" if month == 12 else "года"}"
     merge_cells_horizontally(table, 0, 1, 3)
     for i in range(1, 4):
         set_cell_background(table.cell(0, i))
@@ -262,7 +267,7 @@ def generate_export_doc_with_repeating_header(doc, table_header, table_data, mon
         make_bold(table.cell(0, i))
 
     cell = table.cell(0, 4)
-    cell.text = f"{month_ranges[month]}\n{year} года"
+    cell.text = f"{year} год" if month == 12 else f"{month_ranges[month]}\n{year} {"год" if month == 12 else "года"}"
     merge_cells_horizontally(table, 0, 4, 6)
     for i in range(4, 7):
         set_cell_background(table.cell(0, i))
@@ -277,7 +282,7 @@ def generate_export_doc_with_repeating_header(doc, table_header, table_data, mon
         center_cell(table.cell(0, i))
         make_bold(table.cell(0, i))
 
-    headers = ["физ. объем", "тыс.$", "Доля", "физ. объем", "тыс.$", "Доля", "физ. объем", "млн.$"]
+    headers = ["физ. объем", f"{units}$", "Доля", "физ. объем", f"{units}$", "Доля", "физ. объем", f"{units}$"]
     for i in range(8):
         cell = table.cell(1, i + 1)
         cell.text = headers[i]
@@ -294,6 +299,8 @@ def generate_export_doc_with_repeating_header(doc, table_header, table_data, mon
             cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
             for paragraph in cell.paragraphs:
                 paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                paragraph.paragraph_format.space_before = Pt(3)
+                paragraph.paragraph_format.space_after = Pt(3)
                 run = paragraph.runs[0]
                 run.font.name = 'Times New Roman'
                 run.font.size = Pt(9)
@@ -314,7 +321,7 @@ def generate_export_doc_with_repeating_header(doc, table_header, table_data, mon
 
 
 # Финальная сборка документа
-def generate_report(filename='final_report3.docx'):
+def generate_report(filename=f'Справка по торговле {region_cases[region]["родительный"]} с {country_cases[country]["творительный"]} ({month_ranges[month]}{year} {"год" if month == 12 else "года"}).docx'):
     doc = Document()
 
     # Установка отступов страницы (в дюймах)
@@ -330,9 +337,10 @@ def generate_report(filename='final_report3.docx'):
     
     add_import_analysis_text(doc, data_for_doc["import_text"])
     add_import_analysis_text(doc, data_for_doc["export_text"])
-
-    generate_export_doc_with_repeating_header(doc, data_for_doc["export_header"], data_for_doc["export_table"][:15], month, year)
-    generate_export_doc_with_repeating_header(doc, data_for_doc["import_header"], data_for_doc["import_table"][:15], month, year)
+    export_units, export_table_data = convert_table(data_for_doc["export_table"])
+    generate_export_doc_with_repeating_header(doc, data_for_doc["export_header"], export_table_data[:21], month, year, export_units)
+    import_units, import_table_data = convert_table(data_for_doc["import_table"])
+    generate_export_doc_with_repeating_header(doc, data_for_doc["import_header"], import_table_data[:21], month, year, import_units)
 
     doc.save(filename)
 

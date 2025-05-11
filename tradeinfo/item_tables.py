@@ -1,4 +1,5 @@
 from collections import defaultdict
+from tradeinfo.text_gen import num_converter, fn
 from db.data.month_ranges import month_ranges
 
 
@@ -20,7 +21,7 @@ def get_data_by_country_and_year(conn, region, name_ru, year):
             months = [row[0] for row in cursor.fetchall()]
 
             if not months:
-                return []  # Нет данных за указанный год
+                return 0, []  # Нет данных за указанный год
 
             # 2. Основной запрос с фильтром по месяцам
             data_query = f"""
@@ -60,7 +61,6 @@ def get_data_by_country_and_year(conn, region, name_ru, year):
             ]
 
             results = [dict(zip(columns, row)) for row in rows]
-
         return months[-1], results
     finally:
         conn.close()
@@ -95,7 +95,7 @@ def split_by_year(data):
     return list1, list2
 
 
-def fn(num):
+def cn(num):
     if isinstance(num, float) and num.is_integer():
         return int(num)
     return num
@@ -107,17 +107,17 @@ def calc_growth(current, previous):
         return "new"
     ratio = current / previous
     if ratio > 2:
-        return f"рост в {fn(round(ratio, 1))} р."
+        return f"рост в {cn(round(ratio, 1))} р."
     delta = (ratio - 1) * 100
     if delta > 0:
-        return f"+{fn(round(delta, 1))}%"
-    return f"{fn(round(delta, 1))}%"
+        return f"+{cn(round(delta, 1))}%"
+    return f"{cn(round(delta, 1))}%"
 
 def calc_share(value, total):
     if not total:
         return "-"
     share = value / total * 100
-    return f"{fn(round(share, 2 if share < 1 else 1))}%"
+    return f"{cn(round(share, 2 if share < 1 else 1))}%"
 
 def get_quantity(entry, gen_type):
     return entry.get(f"{gen_type}_units") or entry.get(f"{gen_type}_tons") or 0
@@ -154,8 +154,8 @@ def gen_row_data(index,
         prev_year_value = prev_year_dict[f"{gen_type}_value"]
         prev_year_tons = get_quantity(prev_year_dict, gen_type)
 
-        prev_value = fn(round(prev_year_value, 1))
-        prev_tons = fn(round(prev_year_tons, 1))
+        prev_value = cn(round(prev_year_value, 1))
+        prev_tons = cn(round(prev_year_tons, 1))
 
         share_tons_value = calc_share(prev_year_value, prev_year_sum)
         growth_value = calc_growth(larg_year_value, prev_year_value)
@@ -171,10 +171,10 @@ def gen_row_data(index,
 
     return [
         info_cell,
-        str(prev_tons),
+        fn(prev_tons),
         str(prev_value),
         share_tons_value,
-        str(round(larg_year_tons, 1)),
+        fn(round(larg_year_tons, 1)),
         str(round(larg_year_value, 1)),
         share_larg_value,
         growth_tons,
@@ -198,22 +198,34 @@ def get_table_data(gen_type, to_data, country, reverse=False):
 
     larg_year_sum = sum_by_key(sorted_by_im_value, f"{gen_type}_value")
     prev_year_sum = sum_by_key(prev_year_list, f"{gen_type}_value")
-
     if gen_type == "export":
         str_type = "экспорта"
     elif gen_type == "import":
         str_type = "импорта"
 
-    if larg_year_sum > prev_year_sum:
-        growth_country = fn(round(larg_year_sum / prev_year_sum, 3))
-        if growth_country > 2:
-            growth_country = f"рост в {fn(round(growth_country, 1))} р."
-        else:
-            growth_country = f"+{fn(round((growth_country - 1)*100, 1))}%"
-    else:
-        growth_country = f"{fn(round(((larg_year_sum / prev_year_sum) - 1) * 100, 1))}%"
 
-    first_data_row = [f"Всего {str_type} в {country}", "", str(round(prev_year_sum, 1)), "100%", "", str(round(larg_year_sum)), "100%", "", growth_country]
+    if prev_year_sum == 0:
+        growth_country = "+100%"
+    elif larg_year_sum > prev_year_sum:
+        growth_country = cn(round(larg_year_sum / prev_year_sum, 3))
+        if growth_country > 2:
+            growth_country = f"рост в {cn(round(growth_country, 1))} р."
+        else:
+            growth_country = f"+{cn(round((growth_country - 1)*100, 1))}%"
+    else:
+        growth_country = f"{cn(round(((larg_year_sum / prev_year_sum) - 1) * 100, 1))}%"
+
+    first_data_row = [
+        f"Всего {str_type} в {country}",
+        "",
+        str(round(prev_year_sum, 1)),
+        "-" if prev_year_sum == 0 else "100%",
+        "",
+        str(round(larg_year_sum)),
+        "-" if larg_year_sum == 0 else "100%",
+        "",
+        growth_country
+    ]
     data_for_doc.append(first_data_row)
 
     for i, row in enumerate(sorted_by_im_value):
@@ -248,6 +260,28 @@ def get_summary_data(yearly_data, month):
     prev_import = yearly_data[prev_year]['import_value']
     curr_import = yearly_data[curr_year]['import_value']
 
+    values = [prev_export, curr_export, prev_import, curr_import]
+    max_value = max(values)
+    min_value = min(values)
+    if min_value == 0 or max_value / min_value < 1000:
+        _, units = num_converter(max_value)
+    else:
+        _, units = num_converter(min_value)
+
+    if units == "трлн.":
+        factor = 1_000_000_000
+    elif units == "млрд.":
+        factor = 1_000_000
+    elif units == "млн.":
+        factor = 1_000
+    else:
+        factor = 1
+
+    for i in range(len(values)):
+        values[i] = values[i] / factor
+
+    prev_export, curr_export, prev_import, curr_import = values
+
     prev_trade = prev_export + prev_import
     curr_trade = curr_export + curr_import
 
@@ -255,6 +289,8 @@ def get_summary_data(yearly_data, month):
     curr_balance = curr_export - curr_import
 
     def calc_growth(new, old, percent=True):
+        if new == 0 and old == 0:
+            return ""
         if old == 0:
             return "new"
         diff = new - old
@@ -273,7 +309,7 @@ def get_summary_data(yearly_data, month):
             return "без изменений"
 
     table = [
-        [f"тыс. долл. США", f"{month_ranges[month]} {prev_year} год", f"{month_ranges[month]} {curr_year} год", f"Прирост {curr_year}/{prev_year}"],
+        [f"{units} долл. США", f"{month_ranges[month]}{prev_year} год", f"{month_ranges[month]}{curr_year} год", f"Прирост {curr_year}/{prev_year}"],
         ["Товарооборот", f"{round(prev_trade, 1)}", f"{round(curr_trade, 1)}", calc_growth(curr_trade, prev_trade)],
         ["Экспорт", f"{round(prev_export, 1)}", f"{round(curr_export, 1)}", calc_growth(curr_export, prev_export)],
         ["Импорт", f"{round(prev_import, 1)}", f"{round(curr_import, 1)}", calc_growth(curr_import, prev_import)],
@@ -281,3 +317,29 @@ def get_summary_data(yearly_data, month):
     ]
 
     return table
+
+
+def convert_table(table_data):
+    new_data = []
+
+    max_value = max(float(table_data[0][2]), float(table_data[0][5]))
+
+    if max_value > 100_000_000:
+        units = "млрд."
+        divider = 1_000_000
+    elif max_value > 100_000:
+        units = "млн."
+        divider = 1_000
+    else:
+        units = "тыс."
+        divider = 1
+
+    for row in table_data:
+        new_row = row.copy()
+        new_row[2] = fn(round(float(row[2]) / divider, 2))
+        new_row[5] = fn(round(float(row[5]) / divider, 2))
+        new_data.append(new_row)
+
+    return units, new_data
+
+    

@@ -7,37 +7,40 @@ from db.data.countries import countries
 from db.data.country_aliases import country_aliases
 from db.data.init_tn_veds import init_tn_veds
 from db.data.regions import regions
+from db.data.country_groups import country_groups
 
 
 def main():    
     conn = connect_to_db()
     cur = conn.cursor()
 
-    init_database(cur, init_tn_veds, regions, countries, country_aliases)
-
+    init_database(cur, init_tn_veds, regions, countries, country_aliases, country_groups)
+    conn.commit()
     for insert_info in get_insert_info():
         region_data = get_region_by_id(cur, insert_info["region_id"])
 
-        # try:
-        if not check_data_stats_exists(cur, insert_info["region_id"], insert_info["year"], insert_info["month"], insert_info["digit"], "kgd"):
-            df1 = get_kdg_data(region_data["kgd_code"], 
-                            f"{insert_info['digit']}z", 
-                            str(insert_info["month"]).zfill(2), 
-                            str(insert_info["year"]))
+        try:
+            if not check_data_stats_exists(cur, insert_info["region_id"], insert_info["year"], insert_info["month"], insert_info["digit"], "kgd"):
+                df1 = get_kdg_data(region_data["kgd_code"], 
+                                f"{insert_info['digit']}z", 
+                                str(insert_info["month"]).zfill(2), 
+                                str(insert_info["year"]))
 
-            insert_data(cur, df1, 
-                        insert_info["month"], 
-                        insert_info["year"], 
-                        region_data["name"], 
-                        get_file_type(df1))
+                insert_data(cur, df1, 
+                            insert_info["month"], 
+                            insert_info["year"], 
+                            region_data["name"], 
+                            get_file_type(df1))
 
-            insert_data_stats(cur, insert_info["region_id"], insert_info["year"], insert_info["month"], insert_info["digit"], "kgd")
-            conn.commit()
-            print(f"Данные {region_data['name']}, {insert_info['digit']}, {insert_info['month']}, {insert_info['year']}, kgd загружены")
-        else:
-            print(f"Данные {region_data['name']}, {insert_info['digit']}, {insert_info['month']}, {insert_info['year']}, kgd УЖЕ В БД")
-        # except:
-        #     print(f"Данные {region_data['name']}, {insert_info['digit']}, {insert_info['month']}, {insert_info['year']}, kgd ОШИБКА!!!")
+                insert_data_stats(cur, insert_info["region_id"], insert_info["year"], insert_info["month"], insert_info["digit"], "kgd")
+                conn.commit()
+                print(f"Данные {region_data['name']}, {insert_info['digit']}, {insert_info['month']}, {insert_info['year']}, kgd загружены")
+            else:
+                print(f"Данные {region_data['name']}, {insert_info['digit']}, {insert_info['month']}, {insert_info['year']}, kgd УЖЕ В БД")
+        except:
+            print(f"Данные {region_data['name']}, {insert_info['digit']}, {insert_info['month']}, {insert_info['year']}, kgd ОШИБКА!!!")
+
+            continue
         
 
         try:
@@ -60,8 +63,8 @@ def main():
                 print(f"Данные {region_data['name']}, {insert_info['digit']}, {insert_info['month']}, {insert_info['year']}, statgov УЖЕ В БД")
         except:
             print(f"Данные {region_data['name']}, {insert_info['digit']}, {insert_info['month']}, {insert_info['year']}, statgov ОШИБКА!!!")
+            continue
         
-            
     cur.close()
     conn.close()
 

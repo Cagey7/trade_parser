@@ -163,22 +163,23 @@ def none_if_nan(x):
 def get_insert_info():
     data = []
     digits = [4]
-    # region_ids = list(range(1))  # 1–21 включительно
-    region_ids = [1]  # 1–21 включительно
+    region_ids = list(range(1, 22))
+
 
     for region_id in region_ids:
         for digit in digits:
-            # 2025 год: только январь и февраль
             for month in range(1, 4):
                 data.append({"region_id": region_id, "digit": digit, "month": month, "year": 2025})
 
-            # 2024 год: все месяцы
             for month in range(1, 13):
                 data.append({"region_id": region_id, "digit": digit, "month": month, "year": 2024})
-
-            # 2023 год: все месяцы, кроме 2, 3, 4 для region_id=11 и digit=4
             for month in range(1, 13):
-                if (region_id == 11 and digit == 4 and month in [2, 3, 4]) or (region_id == 15 and digit == 4 and month in [1]):
-                    continue
+                data.append({"region_id": region_id, "digit": digit, "month": month, "year": 2022})
+            for month in range(1, 13):
+                data.append({"region_id": region_id, "digit": digit, "month": month, "year": 2021})
+            
+            for month in range(1, 13):
+                # if (region_id == 11 and digit == 4 and month in [2, 3, 4]) or (region_id == 15 and digit == 4 and month in [1]):
+                #     continue
                 data.append({"region_id": region_id, "digit": digit, "month": month, "year": 2023})
     return data

@@ -66,6 +66,31 @@ create_tables_sql = """
         updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         UNIQUE (region_id, year, month, digit, source_type)
     );
+    
+    CREATE TABLE IF NOT EXISTS country_groups (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL UNIQUE
+    );
+    
+    CREATE TABLE IF NOT EXISTS country_group_membership (
+        id SERIAL PRIMARY KEY,
+        country_id INTEGER NOT NULL REFERENCES countries(id),
+        country_group_id INTEGER NOT NULL REFERENCES country_groups(id),
+        UNIQUE (country_id, country_group_id)
+    );
+    
+    CREATE TABLE IF NOT EXISTS tn_ved_categories (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL UNIQUE,
+        parent_id INTEGER REFERENCES tn_ved_categories(id) ON DELETE SET NULL
+    );
+    
+    CREATE TABLE IF NOT EXISTS tn_ved_category_map (
+        id SERIAL PRIMARY KEY,
+        tn_ved_id INTEGER NOT NULL REFERENCES tn_veds(id),
+        tn_ved_category_id INTEGER NOT NULL REFERENCES tn_ved_categories(id),
+        UNIQUE (tn_ved_id, tn_ved_category_id)
+    );
 """
 
 check_database_sql = "SELECT to_regclass('public.tn_veds');"

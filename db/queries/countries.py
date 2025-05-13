@@ -31,3 +31,12 @@ INSERT INTO country_aliases (country_id, alias)
 VALUES (%s, %s)
 ON CONFLICT DO NOTHING;
 """
+
+
+get_get_country_id_by_name_or_alias_sql = """
+    SELECT c.id
+    FROM countries c
+    LEFT JOIN country_aliases a ON a.country_id = c.id
+    WHERE c.name_ru = %s OR a.alias = %s
+    LIMIT 1;
+""" 

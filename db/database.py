@@ -1,19 +1,25 @@
 import psycopg2
 from datetime import datetime
 from db.queries.init import create_tables_sql, check_database_sql
-from db.queries.countries import get_country_names_all_sql, insert_country_sql, get_country_id_by_iso_sql, insert_country_alias_sql
+from db.queries.countries import get_country_names_all_sql, insert_country_sql, get_country_id_by_iso_sql, insert_country_alias_sql, get_get_country_id_by_name_or_alias_sql
 from db.queries.tnveds import get_tn_ved_dict_sql, insert_tn_ved_sql, update_measure_sql
 from db.queries.regions import get_region_dict_sql, insert_region_sql, get_region_by_id_sql
 from db.queries.stats import check_data_stats_exists_sql, insert_or_update_data_stats_sql
 from db.queries.data import insert_data_sql
+from db.queries.categories import *
 
 
-DB_NAME = "trade100"
+DB_NAME = "trade2"
 DB_USER = "postgres"
 DB_PASSWORD = "123456"
 DB_HOST = "localhost"
 DB_PORT = "5433"
 
+# DB_NAME = "trade"
+# DB_USER = "postgres"
+# DB_PASSWORD = "forestlampsilver"
+# DB_HOST = "13.60.76.175"
+# DB_PORT = "5432"
 
 # Подключение и открытие экселя
 def connect_to_db():
@@ -28,7 +34,7 @@ def connect_to_db():
 
 
 # Инициализация базы данных
-def init_database(cur, init_tn_veds, regions, countries, country_aliases):
+def init_database(cur, init_tn_veds, regions, countries, country_aliases, country_groups):
     cur.execute(check_database_sql)
     exists = cur.fetchone()[0]
     if exists:
@@ -39,6 +45,7 @@ def init_database(cur, init_tn_veds, regions, countries, country_aliases):
     insert_tn_veds(cur, init_tn_veds)
     insert_regions(cur, regions)
     insert_counries(cur, countries, country_aliases)
+    insert_country_group_data(cur, country_groups)
 
 # Получение данных по id
 def get_country_dic(cur):
@@ -118,3 +125,38 @@ def update_measure(cur, code, new_measure):
 
 def insert_trade_data(cur, values):
     cur.execute(insert_data_sql, values)
+
+
+def get_country_id_by_name_or_alias(cur, name):
+    cur.execute(get_get_country_id_by_name_or_alias_sql, (name, name))
+    
+    result = cur.fetchone()
+    return result[0] if result else None
+
+
+def insert_country_group(cur, name):
+    cur.execute(insert_country_groups_sql, (name,))
+    result = cur.fetchone()
+    return result[0] if result else None
+
+
+def insert_country_to_group(cur, country_id, group_id):
+    cur.execute(insert_country_group_membership_sql, (country_id, group_id))
+
+
+def insert_tn_ved_category(cur, name, parent_id=None):
+    cur.execute(insert_tn_ved_categories_sql, (name, parent_id))
+    result = cur.fetchone()
+    return result[0] if result else None
+
+
+def insert_tn_ved_to_category(cur, tn_ved_id, category_id):
+    cur.execute(insert_tn_ved_category_map_sql, (tn_ved_id, category_id))
+
+
+def insert_country_group_data(cur, data):
+    for group_name, countries in data.items():
+        group_id = insert_country_group(cur, group_name)
+        for country in countries:
+            country_id = get_country_id_by_name_or_alias(cur, country)
+            insert_country_to_group(cur, country_id, group_id)

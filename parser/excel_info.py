@@ -6,6 +6,8 @@ from db.data.region_aliases import region_aliases
 from db.database import insert_trade_data, get_country_dic, get_tn_ved_dic, get_region_dic, update_measure
 
 
+CYRILLIC_LETTERS = [chr(code) for code in range(ord('А'), ord('Я') + 1)]
+
 def insert_data(cur, df, month, year, region, format):
     tn_ved = ""
     country_dic = get_country_dic(cur)
@@ -35,7 +37,14 @@ def insert_data(cur, df, month, year, region, format):
             import_value = row.iloc[8]
 
         try:
-            country_id = country_dic.get(row.iloc[1].upper())
+            country_name = row.iloc[1].upper()
+            country_id = country_dic.get(country_name)
+            if "��" in country_name:
+                for letter in CYRILLIC_LETTERS:
+                    candidate = country_name.replace("��", letter)
+                    country_id = country_dic.get(candidate)
+                    if country_id:
+                        break
         except:
             continue
 
@@ -164,6 +173,7 @@ def get_insert_info():
     data = []
     digits = [4]
     region_ids = list(range(1, 22))
+    # region_ids = [2]
 
 
     for region_id in region_ids:
@@ -173,11 +183,7 @@ def get_insert_info():
 
             for month in range(1, 13):
                 data.append({"region_id": region_id, "digit": digit, "month": month, "year": 2024})
-            for month in range(1, 13):
-                data.append({"region_id": region_id, "digit": digit, "month": month, "year": 2022})
-            for month in range(1, 13):
-                data.append({"region_id": region_id, "digit": digit, "month": month, "year": 2021})
-            
+
             for month in range(1, 13):
                 # if (region_id == 11 and digit == 4 and month in [2, 3, 4]) or (region_id == 15 and digit == 4 and month in [1]):
                 #     continue

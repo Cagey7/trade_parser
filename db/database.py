@@ -9,17 +9,17 @@ from db.queries.data import insert_data_sql
 from db.queries.categories import *
 
 
-DB_NAME = "trade2"
-DB_USER = "postgres"
-DB_PASSWORD = "123456"
-DB_HOST = "localhost"
-DB_PORT = "5433"
-
-# DB_NAME = "trade"
+# DB_NAME = "trade_v1"
 # DB_USER = "postgres"
-# DB_PASSWORD = "forestlampsilver"
-# DB_HOST = "13.60.76.175"
-# DB_PORT = "5432"
+# DB_PASSWORD = "123456"
+# DB_HOST = "localhost"
+# DB_PORT = "5433"
+
+DB_NAME = "trade_v1"
+DB_USER = "postgres"
+DB_PASSWORD = "forestlampsilver"
+DB_HOST = "13.60.76.175"
+DB_PORT = "5432"
 
 # Подключение и открытие экселя
 def connect_to_db():

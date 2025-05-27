@@ -9,17 +9,12 @@ from db.queries.data import insert_data_sql
 from db.queries.categories import *
 
 
-# DB_NAME = "trade_v1"
-# DB_USER = "postgres"
-# DB_PASSWORD = "123456"
-# DB_HOST = "localhost"
-# DB_PORT = "5433"
-
 DB_NAME = "trade_v1"
 DB_USER = "postgres"
-DB_PASSWORD = "forestlampsilver"
-DB_HOST = "13.60.76.175"
-DB_PORT = "5432"
+DB_PASSWORD = "123456"
+DB_HOST = "localhost"
+DB_PORT = "5433"
+
 
 # Подключение и открытие экселя
 def connect_to_db():
@@ -34,9 +29,11 @@ def connect_to_db():
 
 
 # Инициализация базы данных
-def init_database(cur, init_tn_veds, regions, countries, country_aliases, country_groups):
+def init_database(cur, init_tn_veds, regions, countries, country_aliases, country_groups, categories, tn_ved_categories):
     cur.execute(check_database_sql)
     exists = cur.fetchone()[0]
+    # insert_categories(cur, categories)
+    # insert_tn_ved_categories(cur, tn_ved_categories)
     if exists:
         print("База данных уже инициализирована — таблица tn_veds найдена.")
         return
@@ -46,6 +43,8 @@ def init_database(cur, init_tn_veds, regions, countries, country_aliases, countr
     insert_regions(cur, regions)
     insert_counries(cur, countries, country_aliases)
     insert_country_group_data(cur, country_groups)
+    insert_categories(cur, categories)
+    insert_tn_ved_categories(cur, tn_ved_categories)
 
 # Получение данных по id
 def get_country_dic(cur):
@@ -160,3 +159,45 @@ def insert_country_group_data(cur, data):
         for country in countries:
             country_id = get_country_id_by_name_or_alias(cur, country)
             insert_country_to_group(cur, country_id, group_id)
+
+
+def insert_categories(cur, categories):
+    for name, parent_name in categories:
+        print(name, parent_name)
+        if parent_name:
+            cur.execute("SELECT id FROM tn_ved_categories WHERE name = %s;", (parent_name,))
+            result = cur.fetchone()
+            parent_id = result[0] if result else None
+        else:
+            parent_id = None
+
+        cur.execute("""
+            INSERT INTO tn_ved_categories (name, parent_id)
+            VALUES (%s, %s)
+            ON CONFLICT (name) DO NOTHING;
+        """, (name, parent_id))
+        
+
+
+def insert_tn_ved_categories(cur, tn_ved_categories):
+    for code, category_name in tn_ved_categories:
+        cur.execute("SELECT id FROM tn_veds WHERE code = %s;", (code,))
+        tn_ved_row = cur.fetchone()
+        if not tn_ved_row:
+            print(f"Код ТН ВЭД {code} не найден в базе.")
+            continue
+        tn_ved_id = tn_ved_row[0]
+
+        cur.execute("SELECT id FROM tn_ved_categories WHERE name = %s;", (category_name,))
+        category_row = cur.fetchone()
+        if not category_row:
+            print(f"Категория '{category_name}' не найдена в базе.")
+            continue
+        category_id = category_row[0]
+
+
+        cur.execute("""
+            INSERT INTO tn_ved_category_map (tn_ved_id, tn_ved_category_id)
+            VALUES (%s, %s)
+            ON CONFLICT (tn_ved_id, tn_ved_category_id) DO NOTHING;
+        """, (tn_ved_id, category_id))

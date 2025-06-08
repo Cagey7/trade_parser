@@ -7,16 +7,18 @@ from db.data.countries import countries
 from db.data.country_aliases import country_aliases
 from db.data.init_tn_veds import init_tn_veds
 from db.data.regions import regions
-from db.data.country_groups import country_groups
 from db.data.categories import categories
 from db.data.tn_ved_categories import tn_ved_categories
+from db.data.groups_country_groups import groups_country_groups
+from db.data.groups_country_groups_data import groups_country_groups_data
 
 
 def main():    
     conn = connect_to_db()
     cur = conn.cursor()
 
-    init_database(cur, init_tn_veds, regions, countries, country_aliases, country_groups, categories, tn_ved_categories)
+    init_database(cur, init_tn_veds, regions, countries, country_aliases, categories, tn_ved_categories, groups_country_groups, groups_country_groups_data)
+    conn.commit()
     for insert_info in get_insert_info():
         region_data = get_region_by_id(cur, insert_info["region_id"])
 

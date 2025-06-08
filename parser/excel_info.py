@@ -171,21 +171,21 @@ def none_if_nan(x):
 
 def get_insert_info():
     data = []
-    digits = [4]
-    # region_ids = list(range(1, 22))
-    region_ids = [1]
+    digits = [4,6]
+    region_ids = list(range(2, 22))
+    # region_ids = [1]
 
 
     for region_id in region_ids:
         for digit in digits:
-            for month in range(4, 5):
+            for month in range(1, 5):
                 data.append({"region_id": region_id, "digit": digit, "month": month, "year": 2025})
 
-            # for month in range(1, 13):
-            #     data.append({"region_id": region_id, "digit": digit, "month": month, "year": 2024})
+            for month in range(1, 13):
+                data.append({"region_id": region_id, "digit": digit, "month": month, "year": 2024})
 
-            # for month in range(1, 13):
-            #     # if (region_id == 11 and digit == 4 and month in [2, 3, 4]) or (region_id == 15 and digit == 4 and month in [1]):
-            #     #     continue
-            #     data.append({"region_id": region_id, "digit": digit, "month": month, "year": 2023})
+            for month in range(1, 13):
+                # if (region_id == 11 and digit == 4 and month in [2, 3, 4]) or (region_id == 15 and digit == 4 and month in [1]):
+                #     continue
+                data.append({"region_id": region_id, "digit": digit, "month": month, "year": 2023})
     return data

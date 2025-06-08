@@ -69,7 +69,8 @@ create_tables_sql = """
     
     CREATE TABLE IF NOT EXISTS country_groups (
         id SERIAL PRIMARY KEY,
-        name VARCHAR(255) NOT NULL UNIQUE
+        name VARCHAR(255) NOT NULL UNIQUE,
+        parent_id INTEGER REFERENCES country_groups(id) ON DELETE SET NULL
     );
     
     CREATE TABLE IF NOT EXISTS country_group_membership (

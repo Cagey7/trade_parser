@@ -4,7 +4,7 @@ import psycopg2
 from decimal import Decimal
 import math
 
-digit = 4
+digit = 6
 
 EXPECTED_IM_VALUES_CU = { #statgov
     'Республика Казахстан': {
@@ -82,11 +82,11 @@ def db_config():
     Переменные по умолчанию можно переопределить при запуске.
     """
     return {
-        "host": os.getenv("DB_HOST", "13.60.76.175"),
-        "port": os.getenv("DB_PORT", "5432"),
-        "dbname": os.getenv("DB_NAME", "trade_4610"),
+        "host": os.getenv("DB_HOST", "localhost"),
+        "port": os.getenv("DB_PORT", "5433"),
+        "dbname": os.getenv("DB_NAME", "trade_test1"),
         "user": os.getenv("DB_USER", "postgres"),
-        "password": os.getenv("DB_PASSWORD", "forestlampsilver"),
+        "password": os.getenv("DB_PASSWORD", "123456"),
     }
 
 @pytest.fixture(scope="session")

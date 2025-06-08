@@ -9,12 +9,17 @@ from db.queries.data import insert_data_sql
 from db.queries.categories import *
 
 
-DB_NAME = "trade_v1"
+DB_NAME = "trade_test1"
 DB_USER = "postgres"
 DB_PASSWORD = "123456"
 DB_HOST = "localhost"
 DB_PORT = "5433"
 
+# DB_NAME = "trade_new_2025"
+# DB_USER = "postgres"
+# DB_PASSWORD = "forestlampsilver"
+# DB_HOST = "13.60.76.175"
+# DB_PORT = "5432"
 
 # Подключение и открытие экселя
 def connect_to_db():
@@ -29,11 +34,9 @@ def connect_to_db():
 
 
 # Инициализация базы данных
-def init_database(cur, init_tn_veds, regions, countries, country_aliases, country_groups, categories, tn_ved_categories):
+def init_database(cur, init_tn_veds, regions, countries, country_aliases, categories, tn_ved_categories, groups_country_groups, group_country_groups_data):
     cur.execute(check_database_sql)
     exists = cur.fetchone()[0]
-    # insert_categories(cur, categories)
-    # insert_tn_ved_categories(cur, tn_ved_categories)
     if exists:
         print("База данных уже инициализирована — таблица tn_veds найдена.")
         return
@@ -42,9 +45,10 @@ def init_database(cur, init_tn_veds, regions, countries, country_aliases, countr
     insert_tn_veds(cur, init_tn_veds)
     insert_regions(cur, regions)
     insert_counries(cur, countries, country_aliases)
-    insert_country_group_data(cur, country_groups)
     insert_categories(cur, categories)
     insert_tn_ved_categories(cur, tn_ved_categories)
+    insert_country_groups(cur, groups_country_groups)
+    insert_groups_country_groups(cur, group_country_groups_data)
 
 # Получение данных по id
 def get_country_dic(cur):
@@ -133,16 +137,6 @@ def get_country_id_by_name_or_alias(cur, name):
     return result[0] if result else None
 
 
-def insert_country_group(cur, name):
-    cur.execute(insert_country_groups_sql, (name,))
-    result = cur.fetchone()
-    return result[0] if result else None
-
-
-def insert_country_to_group(cur, country_id, group_id):
-    cur.execute(insert_country_group_membership_sql, (country_id, group_id))
-
-
 def insert_tn_ved_category(cur, name, parent_id=None):
     cur.execute(insert_tn_ved_categories_sql, (name, parent_id))
     result = cur.fetchone()
@@ -151,14 +145,6 @@ def insert_tn_ved_category(cur, name, parent_id=None):
 
 def insert_tn_ved_to_category(cur, tn_ved_id, category_id):
     cur.execute(insert_tn_ved_category_map_sql, (tn_ved_id, category_id))
-
-
-def insert_country_group_data(cur, data):
-    for group_name, countries in data.items():
-        group_id = insert_country_group(cur, group_name)
-        for country in countries:
-            country_id = get_country_id_by_name_or_alias(cur, country)
-            insert_country_to_group(cur, country_id, group_id)
 
 
 def insert_categories(cur, categories):
@@ -201,3 +187,43 @@ def insert_tn_ved_categories(cur, tn_ved_categories):
             VALUES (%s, %s)
             ON CONFLICT (tn_ved_id, tn_ved_category_id) DO NOTHING;
         """, (tn_ved_id, category_id))
+
+
+def insert_country_groups(cur, groups_country_groups):
+    for name, country_group in groups_country_groups:
+        print(name, country_group)
+        if country_group:
+            cur.execute("SELECT id FROM country_groups WHERE name = %s;", (country_group,))
+            result = cur.fetchone()
+            parent_id = result[0] if result else None
+        else:
+            parent_id = None
+
+        cur.execute("""
+            INSERT INTO country_groups (name, parent_id)
+            VALUES (%s, %s)
+            ON CONFLICT (name) DO NOTHING;
+        """, (name, parent_id))
+
+
+def insert_groups_country_groups(cur, group_country_groups_data):
+    for country, group_country_groups in group_country_groups_data:
+        cur.execute("SELECT id FROM countries WHERE name_ru = %s;", (country,))
+        country_row = cur.fetchone()
+        if not country_row:
+            print(f"Код ТН ВЭД {country} не найден в базе.")
+            continue
+        country_id = country_row[0]
+
+        cur.execute("SELECT id FROM country_groups WHERE name = %s;", (group_country_groups,))
+        group_row = cur.fetchone()
+        if not group_row:
+            print(f"Страна '{group_country_groups}' не найдена в базе.")
+            continue
+        group_id = group_row[0]
+
+        cur.execute("""
+            INSERT INTO country_group_membership (country_id, country_group_id)
+            VALUES (%s, %s)
+            ON CONFLICT (country_id, country_group_id) DO NOTHING;
+        """, (country_id, group_id))

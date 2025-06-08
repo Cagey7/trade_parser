@@ -7,14 +7,11 @@ from db.data.countries import countries
 from db.data.country_aliases import country_aliases
 from db.data.init_tn_veds import init_tn_veds
 from db.data.regions import regions
-from db.data.country_groups import country_groups
 
 
 def main():    
     conn = connect_to_db()
     cur = conn.cursor()
-
-    init_database(cur, init_tn_veds, regions, countries, country_aliases, country_groups)
 
     df1 = pd.read_excel('починенные эксели кгд/31_4z_04_23.xlsx')
 

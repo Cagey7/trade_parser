@@ -9,7 +9,7 @@ from db.queries.data import insert_data_sql
 from db.queries.categories import *
 
 
-DB_NAME = "trade_test1"
+DB_NAME = "trade10test"
 DB_USER = "postgres"
 DB_PASSWORD = "123456"
 DB_HOST = "localhost"
@@ -72,6 +72,17 @@ def get_region_dic(cur):
 def insert_tn_veds(cur, init_tn_veds):
     for code, name in init_tn_veds.items():
         cur.execute(insert_tn_ved_sql, (name, code.strip(), len(code.strip())))
+
+
+def insert_tn_ved(cur, name, code):
+    clean_code = code.strip()
+    cur.execute(insert_tn_ved_sql, (name, clean_code, len(clean_code)))
+    result = cur.fetchone()
+    if result:
+        return result[0]
+    else:
+        cur.execute("SELECT id FROM tn_veds WHERE code = %s;", (clean_code,))
+        return cur.fetchone()[0]
 
 
 def insert_regions(cur, regions):

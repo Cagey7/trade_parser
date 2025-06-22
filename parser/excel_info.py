@@ -3,13 +3,14 @@ import math
 from datetime import datetime
 import pandas as pd
 from db.data.region_aliases import region_aliases
-from db.database import insert_trade_data, get_country_dic, get_tn_ved_dic, get_region_dic, update_measure
+from db.database import insert_trade_data, get_country_dic, get_tn_ved_dic, get_region_dic, update_measure, insert_tn_ved
 
 
 CYRILLIC_LETTERS = [chr(code) for code in range(ord('А'), ord('Я') + 1)]
 
 def insert_data(cur, df, month, year, region, format):
     tn_ved = ""
+    tn_ved_info = ""
     country_dic = get_country_dic(cur)
     tn_ved_dic = get_tn_ved_dic(cur)
     region_dic = get_region_dic(cur)
@@ -17,6 +18,7 @@ def insert_data(cur, df, month, year, region, format):
     for index, row in df.iterrows():
         if is_tn_ved(row.iloc[0]):
             tn_ved = row.iloc[0]
+            tn_ved_info = row.iloc[1]
             if none_if_nan(row.iloc[2]):
                 update_measure(cur, row.iloc[0], row.iloc[2])
         if format == "импорт":
@@ -45,13 +47,45 @@ def insert_data(cur, df, month, year, region, format):
                     country_id = country_dic.get(candidate)
                     if country_id:
                         break
+            
+            if index + 1 < len(df) and country_id:
+                next_index = index + 1
+                while next_index < len(df):
+                    next_country_cell = df.iloc[next_index, 1]
+
+                    if pd.isna(next_country_cell) or str(next_country_cell).strip() == "":
+                        print(df.iloc[next_index, 3], df.iloc[next_index, 4], df.iloc[next_index, 5])
+                        if format == "импорт":
+                            import_tonn = safe_add(import_tonn, df.iloc[next_index, 3])
+                            import_additional = safe_add(import_additional, df.iloc[next_index, 4])
+                            import_value = safe_add(import_value, df.iloc[next_index, 5])
+
+                            export_tonn = safe_add(export_tonn, df.iloc[next_index, 6])
+                            export_additional = safe_add(export_additional, df.iloc[next_index, 7])
+                            export_value = safe_add(export_value, df.iloc[next_index, 8])
+                        elif format == "экспорт":
+                            export_tonn = safe_add(export_tonn, df.iloc[next_index, 3])
+                            export_additional = safe_add(export_additional, df.iloc[next_index, 4])
+                            export_value = safe_add(export_value, df.iloc[next_index, 5])
+
+                            import_tonn = safe_add(import_tonn, df.iloc[next_index, 6])
+                            import_additional = safe_add(import_additional, df.iloc[next_index, 7])
+                            import_value = safe_add(import_value, df.iloc[next_index, 8])
+
+                        next_index += 1
+                    else:
+                        break
+
         except:
             continue
 
         tn_ved_id = tn_ved_dic.get(tn_ved)
+        if not tn_ved_id and tn_ved:
+            tn_ved_id = insert_tn_ved(cur, tn_ved_info, tn_ved)
+        
         region_id = region_dic.get(region)
 
-        if country_id and tn_ved:
+        if country_id and tn_ved_id:
             values = (
                 none_if_nan(export_tonn),
                 none_if_nan(export_additional),
@@ -140,11 +174,6 @@ def get_region(df):
     return matches[0]
 
 
-def get_digit(df):
-    for index, row in df.iterrows():
-        if is_tn_ved(row[0]):
-            return len(row[0])
-
 # Вспомогательные функции
 def get_file_type(df):
     for index, row in df.iterrows():
@@ -157,23 +186,45 @@ def get_file_type(df):
             pass
 
 
-def is_tn_ved(value):
-    try:
-        int(value)
-        return True
-    except (ValueError, TypeError):
+def is_tn_ved(s):
+    if not isinstance(s, str):
         return False
+    s_clean = s.strip()
+    return len(s_clean) in {4, 6, 10} and s_clean.isdigit()
 
 
 def none_if_nan(x):
     return None if (isinstance(x, float) and math.isnan(x)) else x
 
 
+def is_blank(x):
+    if x is None:
+        return True
+    if isinstance(x, float) and math.isnan(x):
+        return True
+    if isinstance(x, str) and x.strip() == "":
+        return True
+    return False
+
+
+def safe_add(a, b):
+    blank_a = is_blank(a)
+    blank_b = is_blank(b)
+
+    if blank_a and blank_b:
+        return None
+    if blank_a:
+        return b
+    if blank_b:
+        return a
+    return a + b
+
+
 def get_insert_info():
     data = []
-    digits = [4,6]
-    region_ids = list(range(2, 22))
-    # region_ids = [1]
+    digits = [4,6,10]
+    # region_ids = list(range(2, 22))
+    region_ids = [1]
 
 
     for region_id in region_ids:

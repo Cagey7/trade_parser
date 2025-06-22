@@ -4,8 +4,7 @@ import psycopg2
 from decimal import Decimal
 import math
 
-digit = 6
-
+digit = 10
 EXPECTED_IM_VALUES_CU = { #statgov
     'Республика Казахстан': {
         (2023, 1): 1_229_970,
@@ -35,6 +34,7 @@ EXPECTED_IM_VALUES_CU = { #statgov
         (2025, 1): 1_162_499,
         (2025, 2): 1_348_819,
         (2025, 3): 1_501_724,
+        (2025, 4): 1594036,
     }
 }
 
@@ -66,9 +66,9 @@ EXPECTED_IM_VALUES = { #kgd
         (2024, 10): 3_682_380,
         (2024, 11): 3_499_215,
         (2024, 12): 3_798_995,
-        (2025, 1): 2_872_814,
-        (2025, 2): 2_876_468,
-        (2025, 3): 3_148_816,
+        (2025, 1): 2873821,
+        (2025, 2): 2876499,
+        (2025, 3): 3135271,
         (2025, 4): 3924536,
     }
 }
@@ -84,7 +84,7 @@ def db_config():
     return {
         "host": os.getenv("DB_HOST", "localhost"),
         "port": os.getenv("DB_PORT", "5433"),
-        "dbname": os.getenv("DB_NAME", "trade_test1"),
+        "dbname": os.getenv("DB_NAME", "trade10test"),
         "user": os.getenv("DB_USER", "postgres"),
         "password": os.getenv("DB_PASSWORD", "123456"),
     }
